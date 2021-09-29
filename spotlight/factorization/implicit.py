@@ -209,7 +209,9 @@ class ImplicitFactorizationModel(object):
         self._check_input(user_ids, item_ids)
 
         for epoch_num in range(self._n_iter):
-
+        	
+        	epoch_loss = 0.0
+        	
         	if (interactions.weights != None):
 		        users, items, weights = shuffle(user_ids,
 			                                   item_ids,
@@ -231,7 +233,7 @@ class ImplicitFactorizationModel(object):
 	                                  self._use_cuda)
 	            item_ids_tensor = gpu(torch.from_numpy(items),
 	                                  self._use_cuda)    	
-			epoch_loss = 0.0
+
 
             if (interactions.weights != None):
 	            for (minibatch_num,
