@@ -25,22 +25,17 @@ class ImplicitFactorizationModel(object):
     matrix factorization [1]_ approach, with latent vectors used
     to represent both users and items. Their dot product gives the
     predicted score for a user-item pair.
-
     The latent representation is given by
     :class:`spotlight.factorization.representations.BilinearNet`.
-
     The model is trained through negative sampling: for any known
     user-item pair, one or more items are randomly sampled to act
     as negatives (expressing a lack of preference by the user for
     the sampled item).
-
     .. [1] Koren, Yehuda, Robert Bell, and Chris Volinsky.
        "Matrix factorization techniques for recommender systems."
        Computer 42.8 (2009).
-
     Parameters
     ----------
-
     loss: string, optional
         One of 'pointwise', 'bpr', 'hinge', or 'adaptive hinge',
         corresponding to losses from :class:`spotlight.losses`.
@@ -181,129 +176,71 @@ class ImplicitFactorizationModel(object):
             raise ValueError('Maximum item id greater '
                              'than number of items in model.')
 
-    def fit(self, interactions, mask = None, verbose=False):
+    def fit(self, interactions, verbose=False):
         """
         Fit the model.
-
         When called repeatedly, model fitting will resume from
         the point at which training stopped in the previous fit
         call.
-
         Parameters
         ----------
-
         interactions: :class:`spotlight.interactions.Interactions`
             The input dataset.
-
         verbose: bool
             Output additional information about current epoch and loss.
         """
 
         user_ids = interactions.user_ids.astype(np.int64)
         item_ids = interactions.item_ids.astype(np.int64)
-        if (interactions.weights != None):
-        	weights_pairs = interactions.weights.astype(np.int64)
+
         if not self._initialized:
             self._initialize(interactions)
 
         self._check_input(user_ids, item_ids)
 
         for epoch_num in range(self._n_iter):
-        	
-        	epoch_loss = 0.0
-        	
-        	if (interactions.weights != None):
-		        users, items, weights = shuffle(user_ids,
-			                                   item_ids,
-			                                   weights_pairs,
-			                                   random_state=self._random_state)
-	        else:
-		        users, items = shuffle(user_ids,
-				                       item_ids,
-				                       random_state=self._random_state)
-	        if (interactions.weights != None):
-	            user_ids_tensor = gpu(torch.from_numpy(users),
-	                                  self._use_cuda)
-	            item_ids_tensor = gpu(torch.from_numpy(items),
-	                                  self._use_cuda)
-	            weights_tensor = gpu(torch.from_numpy(weights),
-	                                  self._use_cuda)
-	        else:
-	            user_ids_tensor = gpu(torch.from_numpy(users),
-	                                  self._use_cuda)
-	            item_ids_tensor = gpu(torch.from_numpy(items),
-	                                  self._use_cuda)    	
 
+            users, items = shuffle(user_ids,
+                                   item_ids,
+                                   random_state=self._random_state)
 
-            if (interactions.weights != None):
-	            for (minibatch_num,
-	                 (batch_user,
-	                  batch_item,
-	                  batch_weights)) in enumerate(minibatch(user_ids_tensor,
-		                                                      item_ids_tensor,
-		                                                      weights_tensor,
-		                                                      batch_size=self._batch_size)):
+            user_ids_tensor = gpu(torch.from_numpy(users),
+                                  self._use_cuda)
+            item_ids_tensor = gpu(torch.from_numpy(items),
+                                  self._use_cuda)
 
-	                positive_prediction = self._net(batch_user, batch_item)
+            epoch_loss = 0.0
 
-	                if self._loss == 'adaptive_hinge':
-	                    negative_prediction = self._get_multiple_negative_predictions(
-	                        batch_user, n=self._num_negative_samples)
-	                else:
-	                    negative_prediction = self._get_negative_prediction(batch_user)
+            for (minibatch_num,
+                 (batch_user,
+                  batch_item)) in enumerate(minibatch(user_ids_tensor,
+                                                      item_ids_tensor,
+                                                      batch_size=self._batch_size)):
 
-	                self._optimizer.zero_grad()
+                positive_prediction = self._net(batch_user, batch_item)
 
-	                loss = self._loss_func(positive_prediction, negative_prediction, mask = batch_weights)
-	                epoch_loss += loss.item()
+                if self._loss == 'adaptive_hinge':
+                    negative_prediction = self._get_multiple_negative_predictions(
+                        batch_user, n=self._num_negative_samples)
+                else:
+                    negative_prediction = self._get_negative_prediction(batch_user)
 
-	                loss.backward()
-	                self._optimizer.step()
+                self._optimizer.zero_grad()
 
-	            epoch_loss /= minibatch_num + 1
+                loss = self._loss_func(positive_prediction, negative_prediction)
+                epoch_loss += loss.item()
 
-	            if verbose:
-	                print('Epoch {}: loss {}'.format(epoch_num, epoch_loss))
+                loss.backward()
+                self._optimizer.step()
 
-	            if np.isnan(epoch_loss) or epoch_loss == 0.0:
-	                raise ValueError('Degenerate epoch loss: {}'
-	                                 .format(epoch_loss))
-	        else:
-	            for (minibatch_num,
-	                 (batch_user,
-	                  batch_item)) in enumerate(minibatch(user_ids_tensor,
-	                                                      item_ids_tensor,
-	                                                      batch_size=self._batch_size)):
+            epoch_loss /= minibatch_num + 1
 
-	                positive_prediction = self._net(batch_user, batch_item)
+            if verbose:
+                print('Epoch {}: loss {}'.format(epoch_num, epoch_loss))
 
-	                if self._loss == 'adaptive_hinge':
-	                    negative_prediction = self._get_multiple_negative_predictions(
-	                        batch_user, n=self._num_negative_samples)
-	                else:
-	                    negative_prediction = self._get_negative_prediction(batch_user)
-
-	                self._optimizer.zero_grad()
-
-	                loss = self._loss_func(positive_prediction, negative_prediction)
-	                epoch_loss += loss.item()
-
-	                loss.backward()
-	                self._optimizer.step()
-
-	            epoch_loss /= minibatch_num + 1
-
-	            if verbose:
-	                print('Epoch {}: loss {}'.format(epoch_num, epoch_loss))
-
-	            if np.isnan(epoch_loss) or epoch_loss == 0.0:
-	                raise ValueError('Degenerate epoch loss: {}'
-	                                 .format(epoch_loss))
-
-
-
-
-
+            if np.isnan(epoch_loss) or epoch_loss == 0.0:
+                raise ValueError('Degenerate epoch loss: {}'
+                                 .format(epoch_loss))
 
     def _get_negative_prediction(self, user_ids):
 
@@ -332,10 +269,8 @@ class ImplicitFactorizationModel(object):
         """
         Make predictions: given a user id, compute the recommendation
         scores for items.
-
         Parameters
         ----------
-
         user_ids: int or array
            If int, will predict the recommendation scores for this
            user for all items in item_ids. If an array, will predict
@@ -345,10 +280,8 @@ class ImplicitFactorizationModel(object):
             Array containing the item ids for which prediction scores
             are desired. If not supplied, predictions for all items
             will be computed.
-
         Returns
         -------
-
         predictions: np.array
             Predicted scores for all items in item_ids.
         """
