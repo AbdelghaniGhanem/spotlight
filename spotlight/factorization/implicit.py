@@ -211,14 +211,14 @@ class ImplicitFactorizationModel(object):
         for epoch_num in range(self._n_iter):
 
         	if (interactions.weights != None):
-	            users, items, weights = shuffle(user_ids,
-	                                   item_ids,
-	                                   weights_pairs,
-	                                   random_state=self._random_state)
+		        users, items, weights = shuffle(user_ids,
+			                                   item_ids,
+			                                   weights_pairs,
+			                                   random_state=self._random_state)
 	        else:
-	            users, items = shuffle(user_ids,
-                       item_ids,
-                       random_state=self._random_state)
+		        users, items = shuffle(user_ids,
+				                       item_ids,
+				                       random_state=self._random_state)
 	        if (interactions.weights != None):
 	            user_ids_tensor = gpu(torch.from_numpy(users),
 	                                  self._use_cuda)
@@ -230,20 +230,17 @@ class ImplicitFactorizationModel(object):
 	            user_ids_tensor = gpu(torch.from_numpy(users),
 	                                  self._use_cuda)
 	            item_ids_tensor = gpu(torch.from_numpy(items),
-	                                  self._use_cuda)
-	            weights_tensor = None	        	
-
-            epoch_loss = 0.0
-
+	                                  self._use_cuda)    	
+			epoch_loss = 0.0
 
             if (interactions.weights != None):
 	            for (minibatch_num,
 	                 (batch_user,
 	                  batch_item,
 	                  batch_weights)) in enumerate(minibatch(user_ids_tensor,
-	                                                      item_ids_tensor,
-	                                                      weights_tensor,
-	                                                      batch_size=self._batch_size)):
+		                                                      item_ids_tensor,
+		                                                      weights_tensor,
+		                                                      batch_size=self._batch_size)):
 
 	                positive_prediction = self._net(batch_user, batch_item)
 
