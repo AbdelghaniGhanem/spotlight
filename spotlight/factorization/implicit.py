@@ -181,7 +181,7 @@ class ImplicitFactorizationModel(object):
             raise ValueError('Maximum item id greater '
                              'than number of items in model.')
 
-    def fit(self, interactions, verbose=False):
+    def fit(self, interactions, mask = None, verbose=False):
         """
         Fit the model.
 
@@ -236,7 +236,7 @@ class ImplicitFactorizationModel(object):
 
                 self._optimizer.zero_grad()
 
-                loss = self._loss_func(positive_prediction, negative_prediction)
+                loss = self._loss_func(positive_prediction, negative_prediction, mask = mask)
                 epoch_loss += loss.item()
 
                 loss.backward()
