@@ -7,6 +7,10 @@ import torch.nn as nn
 
 from spotlight.layers import ScaledEmbedding, ZeroEmbedding
 
+from spotlight.factorization._components import _predict_process_ids
+
+
+from spotlight.factorization.implicit import _check_input
 
 class BilinearNet(nn.Module):
     """
