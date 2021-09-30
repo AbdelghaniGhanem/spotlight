@@ -10,7 +10,7 @@ from spotlight.layers import ScaledEmbedding, ZeroEmbedding
 from spotlight.factorization._components import _predict_process_ids
 
 
-from spotlight.factorization.implicit import _check_input
+
 
 class BilinearNet(nn.Module):
     """
@@ -61,6 +61,29 @@ class BilinearNet(nn.Module):
 
         self.user_biases = ZeroEmbedding(num_users, 1, sparse=sparse)
         self.item_biases = ZeroEmbedding(num_items, 1, sparse=sparse)
+   
+   def _check_input(self, user_ids, item_ids, allow_items_none=False):
+
+        if isinstance(user_ids, int):
+            user_id_max = user_ids
+        else:
+            user_id_max = user_ids.max()
+
+        if user_id_max >= self._num_users:
+            raise ValueError('Maximum user id greater '
+                             'than number of users in model.')
+
+        if allow_items_none and item_ids is None:
+            return
+
+        if isinstance(item_ids, int):
+            item_id_max = item_ids
+        else:
+            item_id_max = item_ids.max()
+
+        if item_id_max >= self._num_items:
+            raise ValueError('Maximum item id greater '
+                             'than number of items in model.')
 
     def forward(self, user_ids, item_ids):
         """
