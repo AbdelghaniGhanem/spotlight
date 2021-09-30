@@ -61,8 +61,8 @@ class BilinearNet(nn.Module):
 
         self.user_biases = ZeroEmbedding(num_users, 1, sparse=sparse)
         self.item_biases = ZeroEmbedding(num_items, 1, sparse=sparse)
-   
-   def _check_input(self, user_ids, item_ids, allow_items_none=False):
+        
+    def _check_input(self, user_ids, item_ids, allow_items_none=False):
 
         if isinstance(user_ids, int):
             user_id_max = user_ids
