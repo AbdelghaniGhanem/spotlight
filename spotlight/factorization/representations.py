@@ -89,3 +89,14 @@ class BilinearNet(nn.Module):
         dot = (user_embedding * item_embedding).sum(1)
 
         return dot + user_bias + item_bias
+    def get_state_embeddings(self, user_ids):
+    	user_embedding = self.user_embeddings(user_ids)
+    	user_embedding = user_embedding.squeeze()
+
+    	return(user_embedding)
+
+    def get_action_embeddings(self, item_ids):
+        item_embedding = self.item_embeddings(item_ids)
+        item_embedding = item_embedding.squeeze()
+
+    	return(item_embedding)
