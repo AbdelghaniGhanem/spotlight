@@ -91,11 +91,26 @@ class BilinearNet(nn.Module):
         return dot + user_bias + item_bias
         
     def get_state_embeddings(self, user_ids):
+
+        self._check_input(user_ids, item_ids, allow_items_none=True)
+        self._net.train(False)
+
+        user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
+                                                  self._num_items,
+                                                  self._use_cuda)
+
         user_embedding = self.user_embeddings(user_ids)
         user_embedding = user_embedding.squeeze()
         return(user_embedding)
 
     def get_action_embeddings(self, item_ids):
+        self._check_input(user_ids, item_ids, allow_items_none=True)
+        self._net.train(False)
+
+        user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
+                                                  self._num_items,
+                                                  self._use_cuda)
+        
         item_embedding = self.item_embeddings(item_ids)
         item_embedding = item_embedding.squeeze()
         return(item_embedding)
