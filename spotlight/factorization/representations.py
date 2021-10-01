@@ -7,9 +7,13 @@ import torch.nn as nn
 
 from spotlight.layers import ScaledEmbedding, ZeroEmbedding
 
-from spotlight.factorization._components import _predict_process_ids
 
 
+from spotlight.torch_utils import gpu
+
+import torch
+
+import numpy as np
 
 
 class BilinearNet(nn.Module):
@@ -117,27 +121,43 @@ class BilinearNet(nn.Module):
 
         return dot + user_bias + item_bias
         
-    def get_state_embeddings(self, user_ids):
+    def get_state_embeddings(self, user_ids, num_items, item_ids=None, use_cuda = False):
 
-        self._check_input(user_ids, item_ids, allow_items_none=True)
-        self._net.train(False)
-
-        user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
-                                                  self._num_items,
-                                                  self._use_cuda)
+        #self._check_input(user_ids, item_ids, allow_items_none=True)
+        #self._net.train(False)
+        
+        
+        if np.isscalar(user_ids):
+            user_ids = np.array(user_ids, dtype=np.int64)
+            
+            
+        user_ids = torch.from_numpy(user_ids.reshape(-1, 1).astype(np.int64))
+        user_var = gpu(user_ids, use_cuda)
+        
+        user_ids = user_var.squeeze()
 
         user_embedding = self.user_embeddings(user_ids)
         user_embedding = user_embedding.squeeze()
         return(user_embedding)
 
-    def get_action_embeddings(self, item_ids):
-        self._check_input(user_ids, item_ids, allow_items_none=True)
-        self._net.train(False)
-
-        user_ids, item_ids = _predict_process_ids(user_ids, item_ids,
-                                                  self._num_items,
-                                                  self._use_cuda)
+    def get_action_embeddings(self, item_ids, use_cuda = False):
+        
+        if np.isscalar(item_ids):
+            item_ids = np.array(item_ids, dtype=np.int64)
+        
+        item_ids = torch.from_numpy(item_ids.reshape(-1, 1).astype(np.int64))
+        
+        item_var = gpu(item_ids, use_cuda)
+        
+        item_ids = item_var.squeeze()
         
         item_embedding = self.item_embeddings(item_ids)
         item_embedding = item_embedding.squeeze()
+        
         return(item_embedding)
+    
+    
+    
+    
+    
+    

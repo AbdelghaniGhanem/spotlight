@@ -9,6 +9,7 @@ def _predict_process_ids(user_ids, item_ids, num_items, use_cuda):
 
     if item_ids is None:
         item_ids = np.arange(num_items, dtype=np.int64)
+        
 
     if np.isscalar(user_ids):
         user_ids = np.array(user_ids, dtype=np.int64)
