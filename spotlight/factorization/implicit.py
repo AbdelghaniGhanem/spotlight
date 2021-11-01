@@ -192,7 +192,7 @@ class ImplicitFactorizationModel(object):
 
         user_ids = interactions.user_ids.astype(np.int64)
         item_ids = interactions.item_ids.astype(np.int64)
-        users_items_weights = interactions.weights.astype(np.int64)
+        users_items_weights = interactions.weights.astype(np.float)
 
         if not self._initialized:
             self._initialize(interactions)
