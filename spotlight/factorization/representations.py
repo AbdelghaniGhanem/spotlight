@@ -7,7 +7,7 @@ import torch.nn as nn
 
 from spotlight.layers import ScaledEmbedding, ZeroEmbedding
 
-
+import torch.nn.functional as F
 
 from spotlight.torch_utils import gpu
 
@@ -52,7 +52,13 @@ class BilinearNet(nn.Module):
         self.embedding_dim = embedding_dim
 
         if user_embedding_layer is not None:
-            self.user_embeddings = user_embedding_layer
+            self.cf1 = nn.Linear(len(user_embedding_layer), 128)
+            #why dont we put the star in front of the n_actions??
+            self.cf2 = nn.Linear(128, self.embedding_dim)
+
+            layer1 = F.relu(self.cf1(user_embedding_layer))
+            self.user_embeddings = self.cf2(layer1)
+
         else:
             self.user_embeddings = ScaledEmbedding(num_users, embedding_dim,
                                                    sparse=sparse)
@@ -65,7 +71,7 @@ class BilinearNet(nn.Module):
 
         self.user_biases = ZeroEmbedding(num_users, 1, sparse=sparse)
         self.item_biases = ZeroEmbedding(num_items, 1, sparse=sparse)
-        
+
     def _check_input(self, user_ids, item_ids, allow_items_none=False):
 
         if isinstance(user_ids, int):
@@ -120,20 +126,20 @@ class BilinearNet(nn.Module):
         dot = (user_embedding * item_embedding).sum(1)
 
         return dot + user_bias + item_bias
-        
+
     def get_state_embeddings(self, user_ids, num_items, item_ids=None, use_cuda = False):
 
         #self._check_input(user_ids, item_ids, allow_items_none=True)
         #self._net.train(False)
-        
-        
+
+
         if np.isscalar(user_ids):
             user_ids = np.array(user_ids, dtype=np.int64)
-            
-            
+
+
         user_ids = torch.from_numpy(user_ids.reshape(-1, 1).astype(np.int64))
         user_var = gpu(user_ids, use_cuda)
-        
+
         user_ids = user_var.squeeze()
 
         user_embedding = self.user_embeddings(user_ids)
@@ -141,23 +147,17 @@ class BilinearNet(nn.Module):
         return(user_embedding)
 
     def get_action_embeddings(self, item_ids, use_cuda = False):
-        
+
         if np.isscalar(item_ids):
             item_ids = np.array(item_ids, dtype=np.int64)
-        
+
         item_ids = torch.from_numpy(item_ids.reshape(-1, 1).astype(np.int64))
-        
+
         item_var = gpu(item_ids, use_cuda)
-        
+
         item_ids = item_var.squeeze()
-        
+
         item_embedding = self.item_embeddings(item_ids)
         item_embedding = item_embedding.squeeze()
-        
+
         return(item_embedding)
-    
-    
-    
-    
-    
-    
