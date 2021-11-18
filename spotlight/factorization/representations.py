@@ -57,6 +57,7 @@ class BilinearNet(nn.Module):
             self.cf2 = nn.Linear(128, self.embedding_dim)
 
             layer1 = F.relu(self.cf1(user_embedding_layer))
+
             self.user_embeddings = self.cf2(layer1)
 
         else:
